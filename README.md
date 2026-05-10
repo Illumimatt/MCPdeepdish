@@ -66,3 +66,47 @@ O projeto expõe ferramentas MCP relacionadas à operação de restaurantes, fil
 ├── deep_dish_mcp_server_final.py
 ├── README.md
 └── requirements.txt
+```
+
+---
+
+
+# Exemplo de Ferramenta MCP
+
+```python
+@mcp.tool()
+def criar_restaurante(
+    id_proprietario: str,
+    nome: str,
+    localizacao: str,
+    tipo_cozinha: str,
+    capacidade: int,
+    horario_abertura: str,
+    horario_fechamento: str,
+) -> dict:
+```
+
+---
+
+# Objetivo do Projeto
+
+O objetivo deste projeto é disponibilizar um servidor MCP para integração de agentes de IA com o sistema Deep Dish, permitindo automação e acesso estruturado às funcionalidades do restaurante.
+
+---
+
+
+# Repositório Base
+
+Projeto original Deep Dish:
+
+- https://github.com/eduspv/deep-dish
+
+Backend utilizado como referência:
+
+- https://github.com/eduspv/deep-dish/tree/main/deep-dish-backend
+
+---
+
+# Licença
+
+Projeto acadêmico e educacional.
