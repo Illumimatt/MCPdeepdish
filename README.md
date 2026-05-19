@@ -1,112 +1,77 @@
-# Deep Dish MCP Server
+# Deep-Dish Reservation Bot 🍕
 
-Servidor MCP (Model Context Protocol) desenvolvido em Python utilizando a biblioteca FastMCP para integração com o sistema Deep Dish.
+Deep-Dish is a backend service and MCP (Model Context Protocol) server designed to power an AI-driven WhatsApp chatbot for restaurant reservations. It bridges a reasoning AI engine with a lightweight, fast Python backend to manage users and bookings.
 
-O projeto expõe ferramentas MCP relacionadas à operação de restaurantes, filas digitais, reservas, mesas e gerenciamento operacional.
+## 🏗 Architecture
 
----
+This project is built using a two-tier architecture:
 
-# Tecnologias
-
-- Python 3.11+
-- FastMCP
-- Dataclasses
-- Type Hints
-- MCP (Model Context Protocol)
+1. **FastAPI Backend:** A high-performance REST API that acts as the source of truth, managing an in-memory runtime database for users and reservations.
+2. **FastMCP Server:** An integration layer that exposes the FastAPI endpoints as discrete tools. Any MCP-compatible AI agent (like Claude, LangChain, or LlamaIndex) can securely call these tools to perform actions on behalf of the user.
 
 ---
 
-# Funcionalidades
+## 📋 Prerequisites
 
-## Autenticação
-
-- Registrar usuário
-- Autenticar usuário
-
-## Restaurantes
-
-- Criar restaurante
-- Buscar restaurantes
-- Obter detalhes do restaurante
-
-## Fila Digital
-
-- Criar entrada na fila
-- Calcular posição da fila
-- Obter status da fila
-- Atualizar status da fila
-
-## Reservas
-
-- Criar reserva
-- Confirmar reserva
-- Cancelar reserva
-
-## Mesas
-
-- Criar mesa
-- Listar mesas livres
-- Associar mesa à reserva
-- Liberar mesa
-
-## Painel Operacional
-
-- Obter métricas do restaurante
-
-## Notificações
-
-- Notificar usuário
+* Python 3.8+
+* `pip` (Python package installer)
 
 ---
 
-# Estrutura do Projeto
+## 🚀 Installation & Setup
 
-```text
-.
-├── deep_dish_mcp_server_final.py
-├── README.md
-└── requirements.txt
+**1. Clone the repository and navigate to the project directory:**
+
+```bash
+git clone <your-repo-url>
+cd deep-dish
+
+```
+
+**2. Create a virtual environment (Recommended):**
+
+```bash
+python -m venv venv
+source venv/bin/activate  # On Windows use: venv\Scripts\activate
+
+```
+
+**3. Install dependencies:**
+
+```bash
+pip install -r requirements.txt
+
 ```
 
 ---
 
+## 💻 Running the Application
 
-# Exemplo de Ferramenta MCP
+To run the full stack locally, you need to spin up both the FastAPI backend and the MCP Server in two separate terminal windows.
 
-```python
-@mcp.tool()
-def criar_restaurante(
-    id_proprietario: str,
-    nome: str,
-    localizacao: str,
-    tipo_cozinha: str,
-    capacidade: int,
-    horario_abertura: str,
-    horario_fechamento: str,
-) -> dict:
+### Step 1: Start the FastAPI Backend
+
+This service must be running first so the MCP tools have an API to communicate with.
+
+Open **Terminal 1** and run:
+
+```bash
+cd deep-dish-server
+uvicorn app.main:app --reload
 ```
 
----
+* The backend will be available at: `[http://127.0.0.1:8000](http://127.0.0.1:8000)`
+* You can view the interactive API documentation at: `[http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs)`
 
-# Objetivo do Projeto
+### Step 2: Start the FastMCP Server
 
-O objetivo deste projeto é disponibilizar um servidor MCP para integração de agentes de IA com o sistema Deep Dish, permitindo automação e acesso estruturado às funcionalidades do restaurante.
+Once the backend is live, start the MCP server to expose the tools to your AI agent.
 
----
+Open **Terminal 2** and run:
 
+```bash
+cd deep-dish-server
+fastmcp run mcp_server.py -t http -p 3755
+```
 
-# Repositório Base
-
-Projeto original Deep Dish:
-
-- https://github.com/eduspv/deep-dish
-
-Backend utilizado como referência:
-
-- https://github.com/eduspv/deep-dish/tree/main/deep-dish-backend
-
----
-
-# Licença
-
-Projeto acadêmico e educacional.
+The mcp server is available at http://127.0.0.1:3755/mcp

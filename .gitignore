@@ -1,0 +1,76 @@
+# ==========================================
+# Python / Byte-compiled / Optimized files
+# ==========================================
+**/__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+.DS_Store
+
+# ==========================================
+# Virtual Environments
+# ==========================================
+venv/
+env/
+.venv/
+.env/
+pip-log.txt
+pip-delete-this-directory.txt
+
+# ==========================================
+# Environment Variables & Secrets
+# ==========================================
+# Never commit your .env files containing API keys or secrets
+.env
+.env.*
+!.env.example
+*.pem
+
+# ==========================================
+# OS Specific (macOS)
+# ==========================================
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+.Spotlight-V100
+.Trashes
+
+# ==========================================
+# IDEs and Editors
+# ==========================================
+# VS Code
+.vscode/
+*.code-workspace
+# PyCharm / IntelliJ
+.idea/
+*.iml
+# Cursor / Others
+.cursor/
+
+# ==========================================
+# Logs and Databases
+# ==========================================
+*.log
+# Ignore SQLite databases (in case you move away from the runtime/in-memory DB)
+*.sqlite3
+*.db
+
+# ==========================================
+# Testing & Coverage
+# ==========================================
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+nosetests.xml
+coverage.xml
+
+# ==========================================
+# Build / Distribution
+# ==========================================
+build/
+dist/
+*.egg-info/
+.eggs/
