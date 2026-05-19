@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
@@ -224,10 +225,15 @@ def buscar_restaurantes(consulta: str) -> List[dict]:
         Lista de restaurantes encontrados.
     """
 
+    print(restaurantes_banco)
+
     resultados = []
 
     for restaurante in restaurantes_banco.values():
-        if consulta.lower() in restaurante.nome.lower() or consulta.lower() in restaurante.localizacao.lower():
+        if (
+            consulta.lower() in restaurante.nome.lower()
+            or consulta.lower() in restaurante.localizacao.lower()
+        ):
             resultados.append(
                 {
                     "id": restaurante.id,
@@ -273,7 +279,9 @@ def obter_detalhes_restaurante(id_restaurante: str) -> dict:
 
 
 @mcp.tool()
-def criar_entrada_fila(id_restaurante: str, id_usuario: str, quantidade_pessoas: int) -> dict:
+def criar_entrada_fila(
+    id_restaurante: str, id_usuario: str, quantidade_pessoas: int
+) -> dict:
     """
     Adiciona um cliente à fila do restaurante.
 
@@ -323,7 +331,8 @@ def calcular_posicao_fila(id_fila: str) -> int:
     entradas = [
         entrada
         for entrada in fila_banco.values()
-        if entrada.id_restaurante == entrada_fila.id_restaurante and entrada.status == StatusFila.AGUARDANDO
+        if entrada.id_restaurante == entrada_fila.id_restaurante
+        and entrada.status == StatusFila.AGUARDANDO
     ]
 
     entradas.sort(key=lambda entrada: entrada.criado_em)
@@ -478,7 +487,7 @@ def cancelar_reserva(id_reserva: str) -> dict:
     }
 
 
-@mcp.tool()
+# @mcp.tool()
 def criar_mesa(id_restaurante: str, numero: int, capacidade: int) -> dict:
     """
     Cria uma mesa vinculada ao restaurante.
@@ -571,7 +580,7 @@ def associar_mesa_reserva(id_reserva: str, id_mesa: str) -> dict:
     }
 
 
-@mcp.tool()
+# @mcp.tool()
 def liberar_mesa(id_mesa: str) -> dict:
     """
     Libera uma mesa ocupada.
@@ -612,7 +621,8 @@ def obter_painel_restaurante(id_restaurante: str) -> dict:
         [
             entrada
             for entrada in fila_banco.values()
-            if entrada.id_restaurante == id_restaurante and entrada.status == StatusFila.AGUARDANDO
+            if entrada.id_restaurante == id_restaurante
+            and entrada.status == StatusFila.AGUARDANDO
         ]
     )
 
@@ -620,7 +630,8 @@ def obter_painel_restaurante(id_restaurante: str) -> dict:
         [
             reserva
             for reserva in reservas_banco.values()
-            if reserva.id_restaurante == id_restaurante and reserva.status == StatusReserva.CONFIRMADA
+            if reserva.id_restaurante == id_restaurante
+            and reserva.status == StatusReserva.CONFIRMADA
         ]
     )
 
@@ -628,7 +639,8 @@ def obter_painel_restaurante(id_restaurante: str) -> dict:
         [
             mesa
             for mesa in mesas_banco.values()
-            if mesa.id_restaurante == id_restaurante and mesa.status == StatusMesa.OCUPADA
+            if mesa.id_restaurante == id_restaurante
+            and mesa.status == StatusMesa.OCUPADA
         ]
     )
 
@@ -663,4 +675,18 @@ def notificar_usuario(id_usuario: str, mensagem: str) -> dict:
 
 
 if __name__ == "__main__":
-    mcp.run()
+    # Configure transport via environment variables so Copilot can reach this MCP over HTTP
+    PORT = int(os.getenv("PORT", "3333"))
+    HOST = os.getenv("HOST", "127.0.0.1")
+    TRANSPORT = os.getenv("MCP_TRANSPORT", "http")
+
+    # If user explicitly wants stdio, fall back to default
+    if TRANSPORT == "stdio":
+        print("Starting MCP server 'deep-dish-mcp' with transport 'stdio'")
+        mcp.run()
+    else:
+        print(
+            f"Starting MCP server 'deep-dish-mcp' with transport '{TRANSPORT}' on {HOST}:{PORT}"
+        )
+        # FastMCP supports passing transport/host/port to run(); this exposes an HTTP endpoint
+        mcp.run(transport=TRANSPORT, host=HOST, port=PORT)
