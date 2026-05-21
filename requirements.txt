@@ -4,3 +4,8 @@ pydantic
 
 fastmcp
 httpx
+
+pytest
+pytest-asyncio
+pytest-httpx
+pytest-cov
