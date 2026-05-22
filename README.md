@@ -83,7 +83,6 @@ pytest -m integration
 ```
 
 ```
-
 ---
 
 ```
@@ -118,4 +117,3 @@ fastmcp run mcp_server.py -t http -p 3755
 ```
 
 The mcp server is available at http://127.0.0.1:3755/mcp
-
