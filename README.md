@@ -42,6 +42,7 @@ source venv/bin/activate  # On Windows use: venv\Scripts\activate
 pip install -r requirements.txt
 
 ```
+---
 ## 🧪 Running Automated Tests
 
 The project includes a robust test suite built with `pytest` to validate the behavior of all MCP server tools. The suite is split into two categories: **Mock Tests** (isolated) and **Integration Tests** (real API).
@@ -79,13 +80,8 @@ To run them, **make sure your FastAPI server is running (`uvicorn main:app --rel
 
 ```bash
 pytest -m integration
-
-```
-
 ```
 ---
-
-```
 
 ## 💻 Running the Application
 
