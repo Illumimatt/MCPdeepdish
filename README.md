@@ -42,8 +42,51 @@ source venv/bin/activate  # On Windows use: venv\Scripts\activate
 pip install -r requirements.txt
 
 ```
+## 🧪 Running Automated Tests
+
+The project includes a robust test suite built with `pytest` to validate the behavior of all MCP server tools. The suite is split into two categories: **Mock Tests** (isolated) and **Integration Tests** (real API).
+
+### 1. Ensure your Virtual Environment is active
+In your terminal, make sure your `venv` is enabled:
+
+```bash
+# On Windows (PowerShell):
+\venv\Scripts\Activate
+
+# On Linux/macOS:
+source venv/bin/activate
+
+```
+
+### 2. Run Mock Tests (Isolated)
+
+These tests intercept all HTTP requests using Mocks. **You do not need to run the FastAPI server (Uvicorn) or the database to execute them.**
+
+To run the mock suite and check the code coverage, execute from the root directory:
+
+```bash
+pytest --cov=mcp_server --cov-report term-missing testes/
+
+```
+
+> 💡 *Note on Coverage: It is expected to display 1 line as `Missing` (specifically the final `mcp.run()` line), since the actual MCP server instance is not initialized during mock execution.*
+
+### 3. Run Integration Tests (Real API)
+
+These tests hit the live endpoints to ensure the MCP server and the FastAPI backend work perfectly together. They validate the complete lifecycle of both **Users** and **Reservations**. They use dynamic data generation, meaning they will not clash with existing database records.
+
+To run them, **make sure your FastAPI server is running (`uvicorn main:app --reload`)** in a separate terminal, then run:
+
+```bash
+pytest -m integration
+
+```
+
+```
 
 ---
+
+```
 
 ## 💻 Running the Application
 
@@ -75,3 +118,4 @@ fastmcp run mcp_server.py -t http -p 3755
 ```
 
 The mcp server is available at http://127.0.0.1:3755/mcp
+
