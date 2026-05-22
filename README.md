@@ -52,7 +52,7 @@ In your terminal, make sure your `venv` is enabled:
 
 ```bash
 # On Windows (PowerShell):
-\venv\Scripts\Activate
+venv\Scripts\Activate
 
 # On Linux/macOS:
 source venv/bin/activate
