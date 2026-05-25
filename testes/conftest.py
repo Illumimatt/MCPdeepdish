@@ -1,4 +1,5 @@
 import sys
+import os
 from pathlib import Path
 import pytest
 
@@ -11,6 +12,11 @@ if str(SERVER_DIR) not in sys.path:
 @pytest.fixture(scope="session")
 def anyio_backend():
     return "asyncio"
+
+
+@pytest.fixture(scope="session")
+def api_base_url():
+    return os.getenv("API_BASE_URL", "http://127.0.0.1:8000")
 
 # --- FIXTURES DE DADOS REUTILIZÁVEIS ---
 

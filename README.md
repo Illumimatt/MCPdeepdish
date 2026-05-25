@@ -113,3 +113,30 @@ fastmcp run mcp_server.py -t http -p 3755
 ```
 
 The mcp server is available at http://127.0.0.1:3755/mcp
+
+---
+
+## 🐳 Running with Docker
+
+The repository now includes a Docker setup with two containers: one for the FastAPI backend and one for the MCP server.
+
+From the repository root, run:
+
+```bash
+docker compose up --build
+```
+
+This exposes:
+
+* FastAPI at `http://127.0.0.1:8000`
+* MCP server at `http://127.0.0.1:3755/mcp`
+
+To run the test suite from the `testes` folder against the live stack, use:
+
+```bash
+docker compose run --rm tests
+```
+
+That command waits for the API healthcheck, mounts the repository, and runs `pytest /workspace/testes` inside the container.
+
+If you want to run only one service, you can still use the same image and override the command in Docker Compose.

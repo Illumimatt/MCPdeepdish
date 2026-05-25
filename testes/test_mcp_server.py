@@ -6,10 +6,10 @@ from mcp_server import create_user, get_user, create_reservation, get_user_reser
 # -----------------------------------------------------------------------------
 
 @pytest.mark.anyio
-async def test_create_user_sucesso(httpx_mock, dados_usuario_valido):
+async def test_create_user_sucesso(httpx_mock, dados_usuario_valido, api_base_url):
     httpx_mock.add_response(
         method="POST",
-        url="http://127.0.0.1:8000/users/",
+        url=f"{api_base_url}/users/",
         json=dados_usuario_valido,  # Usando a fixture aqui
         status_code=200
     )
@@ -24,10 +24,10 @@ async def test_create_user_sucesso(httpx_mock, dados_usuario_valido):
 
 
 @pytest.mark.anyio
-async def test_create_user_falha_ja_existente(httpx_mock, dados_usuario_valido):
+async def test_create_user_falha_ja_existente(httpx_mock, dados_usuario_valido, api_base_url):
     httpx_mock.add_response(
         method="POST",
-        url="http://127.0.0.1:8000/users/",
+        url=f"{api_base_url}/users/",
         text="User already exists",
         status_code=400
     )
@@ -46,11 +46,11 @@ async def test_create_user_falha_ja_existente(httpx_mock, dados_usuario_valido):
 # -----------------------------------------------------------------------------
 
 @pytest.mark.anyio
-async def test_get_user_sucesso(httpx_mock, dados_usuario_valido):
+async def test_get_user_sucesso(httpx_mock, dados_usuario_valido, api_base_url):
     phone = dados_usuario_valido["phone_number"]
     httpx_mock.add_response(
         method="GET",
-        url=f"http://127.0.0.1:8000/users/{phone}",
+        url=f"{api_base_url}/users/{phone}",
         json=dados_usuario_valido,
         status_code=200
     )
@@ -62,10 +62,10 @@ async def test_get_user_sucesso(httpx_mock, dados_usuario_valido):
 
 
 @pytest.mark.anyio
-async def test_get_user_nao_encontrado(httpx_mock):
+async def test_get_user_nao_encontrado(httpx_mock, api_base_url):
     httpx_mock.add_response(
         method="GET",
-        url="http://127.0.0.1:8000/users/5511000000000",
+        url=f"{api_base_url}/users/5511000000000",
         status_code=404
     )
 
@@ -78,10 +78,10 @@ async def test_get_user_nao_encontrado(httpx_mock):
 # -----------------------------------------------------------------------------
 
 @pytest.mark.anyio
-async def test_create_reservation_sucesso(httpx_mock, dados_reserva_valida):
+async def test_create_reservation_sucesso(httpx_mock, dados_reserva_valida, api_base_url):
     httpx_mock.add_response(
         method="POST",
-        url="http://127.0.0.1:8000/reservations/",
+        url=f"{api_base_url}/reservations/",
         json=dados_reserva_valida,
         status_code=200
     )
@@ -97,10 +97,10 @@ async def test_create_reservation_sucesso(httpx_mock, dados_reserva_valida):
 
 
 @pytest.mark.anyio
-async def test_create_reservation_utilizador_nao_registado(httpx_mock):
+async def test_create_reservation_utilizador_nao_registado(httpx_mock, api_base_url):
     httpx_mock.add_response(
         method="POST",
-        url="http://127.0.0.1:8000/reservations/",
+        url=f"{api_base_url}/reservations/",
         text="User must be registered first",
         status_code=404
     )
@@ -120,11 +120,11 @@ async def test_create_reservation_utilizador_nao_registado(httpx_mock):
 # -----------------------------------------------------------------------------
 
 @pytest.mark.anyio
-async def test_get_user_reservations_com_sucesso(httpx_mock, dados_reserva_valida):
+async def test_get_user_reservations_com_sucesso(httpx_mock, dados_reserva_valida, api_base_url):
     phone = dados_reserva_valida["phone_number"]
     httpx_mock.add_response(
         method="GET",
-        url=f"http://127.0.0.1:8000/reservations/{phone}",
+        url=f"{api_base_url}/reservations/{phone}",
         json=[dados_reserva_valida],
         status_code=200
     )
@@ -136,11 +136,11 @@ async def test_get_user_reservations_com_sucesso(httpx_mock, dados_reserva_valid
 
 
 @pytest.mark.anyio
-async def test_get_user_reservations_vazia(httpx_mock, dados_usuario_valido):
+async def test_get_user_reservations_vazia(httpx_mock, dados_usuario_valido, api_base_url):
     phone = dados_usuario_valido["phone_number"]
     httpx_mock.add_response(
         method="GET",
-        url=f"http://127.0.0.1:8000/reservations/{phone}",
+        url=f"{api_base_url}/reservations/{phone}",
         json=[],
         status_code=200
     )
@@ -150,11 +150,11 @@ async def test_get_user_reservations_vazia(httpx_mock, dados_usuario_valido):
 
 
 @pytest.mark.anyio
-async def test_get_user_reservations_falha(httpx_mock, dados_usuario_valido):
+async def test_get_user_reservations_falha(httpx_mock, dados_usuario_valido, api_base_url):
     phone = dados_usuario_valido["phone_number"]
     httpx_mock.add_response(
         method="GET",
-        url=f"http://127.0.0.1:8000/reservations/{phone}",
+        url=f"{api_base_url}/reservations/{phone}",
         text="Internal Server Error",
         status_code=500
     )
@@ -168,10 +168,10 @@ async def test_get_user_reservations_falha(httpx_mock, dados_usuario_valido):
 # -----------------------------------------------------------------------------
 
 @pytest.mark.anyio
-async def test_cancel_reservation_sucesso(httpx_mock):
+async def test_cancel_reservation_sucesso(httpx_mock, api_base_url):
     httpx_mock.add_response(
         method="DELETE",
-        url="http://127.0.0.1:8000/reservations/res-123",
+        url=f"{api_base_url}/reservations/res-123",
         status_code=200
     )
 
@@ -180,10 +180,10 @@ async def test_cancel_reservation_sucesso(httpx_mock):
 
 
 @pytest.mark.anyio
-async def test_cancel_reservation_nao_encontrada(httpx_mock):
+async def test_cancel_reservation_nao_encontrada(httpx_mock, api_base_url):
     httpx_mock.add_response(
         method="DELETE",
-        url="http://127.0.0.1:8000/reservations/res-invalido",
+        url=f"{api_base_url}/reservations/res-invalido",
         text="Reservation not found",
         status_code=404
     )

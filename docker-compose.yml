@@ -1,0 +1,43 @@
+services:
+  api:
+    build:
+      context: .
+    working_dir: /workspace/deep-dish-server
+    volumes:
+      - ./:/workspace
+    command: ["python", "-m", "uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health').read()"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    ports:
+      - "8000:8000"
+
+  mcp:
+    build:
+      context: .
+    working_dir: /workspace/deep-dish-server
+    volumes:
+      - ./:/workspace
+    command: ["fastmcp", "run", "mcp_server.py", "-t", "http", "-p", "3755"]
+    environment:
+      API_BASE_URL: http://api:8000
+    depends_on:
+      api:
+        condition: service_healthy
+    ports:
+      - "3755:3755"
+
+  tests:
+    build:
+      context: .
+    working_dir: /workspace
+    volumes:
+      - ./:/workspace
+    environment:
+      API_BASE_URL: http://api:8000
+    depends_on:
+      api:
+        condition: service_healthy
+    command: ["pytest", "/workspace/testes"]

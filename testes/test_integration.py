@@ -4,7 +4,7 @@ from mcp_server import create_user, get_user, create_reservation, get_user_reser
 
 @pytest.mark.integration
 @pytest.mark.anyio
-async def test_integracao_ciclo_vida_usuario():
+async def test_integracao_ciclo_vida_usuario(api_base_url):
     """
     Teste Real: Cria um usuário com dados dinâmicos na API ativa
     e valida se o MCP consegue criar e buscar o registro corretamente.
@@ -28,7 +28,7 @@ async def test_integracao_ciclo_vida_usuario():
 
 @pytest.mark.integration
 @pytest.mark.anyio
-async def test_integracao_fluxo_reserva_completo():
+async def test_integracao_fluxo_reserva_completo(api_base_url):
     """
     Teste Real: Cria um usuário e depois agenda uma reserva para ele,
     garantindo que o relacionamento e a listagem na API funcionem.
