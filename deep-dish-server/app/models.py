@@ -17,3 +17,8 @@ class ReservationCreate(BaseModel):
 class Reservation(ReservationCreate):
     id: str
     status: str = "confirmed"  # Can be 'confirmed', 'cancelled', or 'completed'
+
+
+class ReservationUpdate(BaseModel):
+    date_time: str | None
+    party_size: int | None

@@ -3,7 +3,7 @@ from typing import List
 
 from fastapi import APIRouter, HTTPException
 
-from app.models import Reservation, ReservationCreate
+from app.models import Reservation, ReservationCreate, ReservationUpdate
 from app.services.database import reservations_db, users_db
 
 router = APIRouter(prefix="/reservations", tags=["Reservations"])
@@ -27,9 +27,26 @@ def create_reservation(res_in: ReservationCreate):
     return new_reservation
 
 
+@router.patch("/{reservation_id}", response_model=Reservation)
+def update_reservation(reservation_id: str, res_in: ReservationUpdate):
+    if reservation_id not in reservations_db:
+        raise HTTPException(status_code=404, detail="Reservation not found")
+
+    if reservations_db[reservation_id].get("status") == "cancelled":
+        raise HTTPException(
+            status_code=400, detail="Cannot update a cancelled reservation"
+        )
+
+    if res_in.date_time is not None:
+        reservations_db[reservation_id]["date_time"] = res_in.date_time
+    if res_in.party_size is not None:
+        reservations_db[reservation_id]["party_size"] = res_in.party_size
+
+    return reservations_db[reservation_id]
+
+
 @router.get("/{phone_number}", response_model=List[Reservation])
 def get_user_reservations(phone_number: str):
-    # Retrieve all reservations for a specific WhatsApp number
     user_res = [
         res for res in reservations_db.values() if res["phone_number"] == phone_number
     ]

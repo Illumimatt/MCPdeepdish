@@ -1,5 +1,6 @@
-import httpx
 import os
+
+import httpx
 from fastmcp import FastMCP
 
 mcp = FastMCP("DeepDish Reservations")
@@ -64,6 +65,35 @@ async def get_user_reservations(phone_number: str) -> str:
                 return "No reservations found for this user."
             return f"Reservations: {reservations}"
         return f"Failed to fetch reservations: {response.text}"
+
+
+@mcp.tool
+async def update_reservation(
+    reservation_id: str, date_time: str | None = None, party_size: int | None = None
+) -> str:
+    """
+    Update an existing restaurant reservation.
+    Requires the reservation_id.
+    You can optionally provide a new date_time (ISO 8601 format) or a new party_size.
+    """
+    payload = {}
+    if date_time is not None:
+        payload["date_time"] = date_time
+    if party_size is not None:
+        payload["party_size"] = party_size
+
+    if not payload:
+        return "No updates were provided. Please specify a new date_time or party_size."
+
+    async with httpx.AsyncClient() as client:
+        response = await client.patch(
+            f"{API_BASE_URL}/reservations/{reservation_id}",
+            json=payload,
+        )
+        if response.status_code == 200:
+            res_data = response.json()
+            return f"Reservation successfully updated! New details: {res_data}"
+        return f"Failed to update reservation: {response.text}"
 
 
 @mcp.tool
