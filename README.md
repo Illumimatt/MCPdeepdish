@@ -85,7 +85,7 @@ pytest -m integration
 
 ## 💻 Running the Application
 
-To run the full stack locally, you need to spin up both the FastAPI backend and the MCP Server in two separate terminal windows.
+To run the full stack locally, you need to spin up the services:
 
 ### Step 1: Start the FastAPI Backend
 
@@ -98,21 +98,18 @@ cd deep-dish-server
 uvicorn app.main:app --reload
 ```
 
-* The backend will be available at: `[http://127.0.0.1:8000](http://127.0.0.1:8000)`
-* You can view the interactive API documentation at: `[http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs)`
+* The backend will be available at: `http://127.0.0.1:8000`
+* You can view the interactive API documentation at: `http://127.0.0.1:8000/docs`
 
-### Step 2: Start the FastMCP Server
+### Step 2: Start the Telegram Bot (Includes MCP Client)
 
-Once the backend is live, start the MCP server to expose the tools to your AI agent.
+The Telegram Bot interacts with the FastMCP Server using **STDIO**. You don't need to manually start the MCP server over HTTP because the bot itself spins up the `mcp_server.py` as a direct subprocess. 
 
-Open **Terminal 2** and run:
+Open **Terminal 2**, make sure your environment is activated, and run:
 
 ```bash
-cd deep-dish-server
-fastmcp run mcp_server.py -t http -p 3755
+python telegram_bot.py
 ```
-
-The mcp server is available at http://127.0.0.1:3755/mcp
 
 ---
 

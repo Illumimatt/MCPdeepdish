@@ -8,4 +8,6 @@ httpx
 pytest
 pytest-asyncio
 pytest-httpx
-pytest-cov
+
+python-telegram-bot
+mcp

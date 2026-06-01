@@ -20,7 +20,7 @@ services:
     working_dir: /workspace/deep-dish-server
     volumes:
       - ./:/workspace
-    command: ["fastmcp", "run", "mcp_server.py", "-t", "http", "-p", "3755"]
+    command: ["fastmcp", "run", "mcp_server.py", "-t", "sse", "--host", "0.0.0.0", "-p", "3755"]
     environment:
       API_BASE_URL: http://api:8000
     depends_on:
