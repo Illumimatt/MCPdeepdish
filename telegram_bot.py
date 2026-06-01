@@ -5,6 +5,7 @@ import ollama
 from mcp import ClientSession
 from mcp.client.sse import sse_client
 from telegram import Update
+from telegram.constants import ParseMode
 from telegram.ext import (
     Application,
     CommandHandler,
@@ -122,7 +123,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
 
     try:
         reply_text = await process_chat(user_id, user_message)
-        await update.message.reply_text(reply_text)
+        await update.message.reply_text(reply_text, parse_mode=ParseMode.MARKDOWN)
     except Exception as e:
         print(f"Error processing message: {e}")
         traceback.print_exc()
