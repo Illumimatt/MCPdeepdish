@@ -1,6 +1,7 @@
 import asyncio
 import os
 import traceback
+from datetime import datetime
 
 import ollama
 from mcp import ClientSession
@@ -73,14 +74,69 @@ async def _get_mcp_session_and_tools():
 
 async def process_chat(phone_number: str, user_message: str):
     if phone_number not in user_sessions:
+        agora = datetime.now()
+        data_hora = agora.strftime("%A, %d de %B de %Y, %H:%M")
+        # Traduz dias da semana para português
+        dias = {
+            "Monday": "segunda-feira",
+            "Tuesday": "terça-feira",
+            "Wednesday": "quarta-feira",
+            "Thursday": "quinta-feira",
+            "Friday": "sexta-feira",
+            "Saturday": "sábado",
+            "Sunday": "domingo",
+        }
+        meses = {
+            "January": "janeiro",
+            "February": "fevereiro",
+            "March": "março",
+            "April": "abril",
+            "May": "maio",
+            "June": "junho",
+            "July": "julho",
+            "August": "agosto",
+            "September": "setembro",
+            "October": "outubro",
+            "November": "novembro",
+            "December": "dezembro",
+        }
+        for en, pt in {**dias, **meses}.items():
+            data_hora = data_hora.replace(en, pt)
+
         user_sessions[phone_number] = [
             {
                 "role": "system",
                 "content": (
-                    "Você é um assistente de reservas de restaurante. Responda em português. "
-                    "Seja educado, conciso e prestativo. Use as ferramentas disponíveis para gerenciar reservas e usuários. "
-                    f"IMPORTANTE: O número de telefone/ID do usuário atual é '{phone_number}'. "
-                    "Use este número automaticamente ao chamar ferramentas que exigem 'phone_number', sem perguntar ao usuário."
+                    "Você é Bento, recepcionista do restaurante Deep-Dish. "
+                    "Você é educado, direto e natural — como uma pessoa de verdade, não um robô animado.\n\n"
+                    f"HOJE É {data_hora}.\n\n"
+                    "REGRAS DE USO DAS FUNÇÕES:\n"
+                    "- Quando o cliente pede para VER, CONSULTAR, FAZER, ALTERAR ou CANCELAR uma reserva: "
+                    "CHAME a função IMEDIATAMENTE. Não diga 'deixa eu ver' ou 'vou conferir'. Apenas chame.\n"
+                    "- Se o cliente pergunta 'quais são minhas reservas?', chame get_user_reservations AGORA.\n"
+                    "- Se o cliente quer fazer uma reserva mas você não sabe se ele é cadastrado, "
+                    "chame get_user primeiro. Se não for, chame create_user antes de create_reservation.\n"
+                    "- NUNCA invente informações. Se a função retornou 'Nenhuma reserva encontrada', "
+                    "diga isso de forma simples e ofereça ajuda para marcar uma nova.\n\n"
+                    "REGRAS DE LINGUAGEM:\n"
+                    "- Seja DIRETO. Máximo 2 ou 3 frases curtas por resposta. Nada de textos longos.\n"
+                    "- NUNCA use emojis. Nunca.\n"
+                    "- NUNCA faça comentários sobre os planos do cliente ('que legal', 'vai ser animado', etc). "
+                    "Apenas resolva o que ele pediu.\n"
+                    "- NUNCA mencione termos técnicos: 'phone_number', 'ISO 8601', 'ferramentas', 'ID', 'sistema'.\n"
+                    "- NUNCA mostre o número de telefone do cliente.\n"
+                    "- Ao perguntar data/horário: 'que dia e horário?' ou 'qual horário?'\n"
+                    "- Ao perguntar quantas pessoas: 'quantas pessoas?'\n"
+                    "- Ao pedir o nome: 'qual o seu nome?'\n\n"
+                    "EXEMPLOS de como responder:\n"
+                    "- Cliente: 'quero reservar para quarta, 6 pessoas'\n"
+                    "  Você: 'Certo. Qual horário?'\n"
+                    "- Cliente: 'quais minhas reservas?'\n"
+                    "  Você: [chama get_user_reservations] 'O senhor não tem nenhuma reserva no momento. Quer fazer uma?'\n"
+                    "- Cliente: 'cancelar minha reserva'\n"
+                    "  Você: [chama get_user_reservations, depois cancel_reservation] 'Reserva cancelada, senhor.'\n\n"
+                    f"INFO INTERNA: telefone do cliente = '{phone_number}'. "
+                    "Use ao chamar funções. NUNCA mostre ao cliente."
                 ),
             }
         ]
