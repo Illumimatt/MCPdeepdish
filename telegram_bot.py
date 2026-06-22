@@ -1,3 +1,4 @@
+import asyncio
 import os
 import traceback
 
@@ -24,6 +25,51 @@ MCP_SERVER_URL = "http://127.0.0.1:3755/sse"
 
 user_sessions = {}
 
+_mcp_lock = asyncio.Lock()
+_mcp_session: ClientSession | None = None
+_mcp_tools: list[dict] | None = None
+_sse_context = None
+
+
+async def _get_mcp_session_and_tools():
+    """Return the persistent (session, ollama-formatted tools) tuple.
+
+    The first call establishes the SSE connection and initializes the MCP
+    session. Subsequent calls reuse the same session. A lock ensures that
+    concurrent requests don't race during initialization.
+    """
+    global _mcp_session, _mcp_tools, _sse_context
+
+    if _mcp_session is not None:
+        return _mcp_session, _mcp_tools
+
+    async with _mcp_lock:
+        # Double-check inside the lock (another waiter may have initialized it)
+        if _mcp_session is not None:
+            return _mcp_session, _mcp_tools
+
+        _sse_context = sse_client(MCP_SERVER_URL)
+        streams = await _sse_context.__aenter__()
+        _mcp_session = ClientSession(streams[0], streams[1])
+        await _mcp_session.__aenter__()
+        await _mcp_session.initialize()
+
+        mcp_tools = await _mcp_session.list_tools()
+        _mcp_tools = []
+        for tool in mcp_tools.tools:
+            _mcp_tools.append(
+                {
+                    "type": "function",
+                    "function": {
+                        "name": tool.name,
+                        "description": tool.description,
+                        "parameters": tool.inputSchema,
+                    },
+                }
+            )
+
+        return _mcp_session, _mcp_tools
+
 
 async def process_chat(phone_number: str, user_message: str):
     if phone_number not in user_sessions:
@@ -41,70 +87,54 @@ async def process_chat(phone_number: str, user_message: str):
 
     user_sessions[phone_number].append({"role": "user", "content": user_message})
 
-    async with sse_client(MCP_SERVER_URL) as streams:
-        async with ClientSession(streams[0], streams[1]) as session:
-            await session.initialize()
+    session, ollama_tools = await _get_mcp_session_and_tools()
+    ollama_client = ollama.AsyncClient()
 
-            mcp_tools = await session.list_tools()
+    response = await ollama_client.chat(
+        model=OLLAMA_MODEL,
+        messages=user_sessions[phone_number],
+        tools=ollama_tools,
+    )
 
-            ollama_tools = []
-            for tool in mcp_tools.tools:
-                ollama_tools.append(
-                    {
-                        "type": "function",
-                        "function": {
-                            "name": tool.name,
-                            "description": tool.description,
-                            "parameters": tool.inputSchema,
-                        },
-                    }
+    while response["message"].get("tool_calls"):
+        user_sessions[phone_number].append(response["message"])
+
+        for tool_call in response["message"]["tool_calls"]:
+            tool_name = tool_call["function"]["name"]
+            tool_args = tool_call["function"]["arguments"]
+
+            try:
+                tool_response = await session.call_tool(tool_name, tool_args)
+                tool_text = str(
+                    tool_response.content[0].text
+                    if tool_response.content
+                    else tool_response
                 )
+            except Exception as e:
+                tool_text = f"Error executing tool: {e}"
 
-            response = ollama.chat(
-                model=OLLAMA_MODEL,
-                messages=user_sessions[phone_number],
-                tools=ollama_tools,
+            user_sessions[phone_number].append(
+                {
+                    "role": "tool",
+                    "name": tool_name,
+                    "content": tool_text,
+                }
             )
 
-            while response["message"].get("tool_calls"):
-                user_sessions[phone_number].append(response["message"])
+        response = await ollama_client.chat(
+            model=OLLAMA_MODEL,
+            messages=user_sessions[phone_number],
+            tools=ollama_tools,
+        )
 
-                for tool_call in response["message"]["tool_calls"]:
-                    tool_name = tool_call["function"]["name"]
-                    tool_args = tool_call["function"]["arguments"]
+    user_sessions[phone_number].append(response["message"])
 
-                    try:
-                        tool_response = await session.call_tool(tool_name, tool_args)
-                        tool_text = str(
-                            tool_response.content[0].text
-                            if tool_response.content
-                            else tool_response
-                        )
-                    except Exception as e:
-                        tool_text = f"Error executing tool: {e}"
+    final_text = response["message"].get("content", "").strip()
 
-                    user_sessions[phone_number].append(
-                        {
-                            "role": "tool",
-                            "name": tool_name,
-                            "content": tool_text,
-                        }
-                    )
+    if not final_text:
+        return "Entendido!"
 
-                response = ollama.chat(
-                    model=OLLAMA_MODEL,
-                    messages=user_sessions[phone_number],
-                    tools=ollama_tools,
-                )
-
-            user_sessions[phone_number].append(response["message"])
-
-            final_text = response["message"].get("content", "").strip()
-
-            if not final_text:
-                return "Entendido!"
-
-            return final_text
+    return final_text
 
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
