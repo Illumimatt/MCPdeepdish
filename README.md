@@ -4,10 +4,11 @@ Deep-Dish is a backend service and MCP (Model Context Protocol) server designed 
 
 ## 🏗 Architecture
 
-This project is built using a two-tier architecture:
+This project is built using a three-tier architecture:
 
 1. **FastAPI Backend:** A high-performance REST API that acts as the source of truth, managing an in-memory runtime database for users and reservations.
-2. **FastMCP Server:** An integration layer that exposes the FastAPI endpoints as discrete tools. Any MCP-compatible AI agent (like Claude, LangChain, or LlamaIndex) can securely call these tools to perform actions on behalf of the user.
+2. **FastMCP Server:** An integration layer that exposes the FastAPI endpoints as discrete MCP tools over SSE (Server-Sent Events). Any MCP-compatible AI agent can securely call these tools to perform actions on behalf of the user.
+3. **Telegram Bot:** The user-facing entry point. It receives messages, sends them to Ollama for reasoning, and forwards any tool calls to the MCP server. The bot maintains a persistent SSE connection to avoid per-message reconnection overhead.
 
 ---
 
@@ -85,31 +86,54 @@ pytest -m integration
 
 ## 💻 Running the Application
 
-To run the full stack locally, you need to spin up the services:
+To run the full stack locally, you need to start three services in order. Make sure your virtual environment is activated (`source venv/bin/activate`) in all terminals.
 
-### Step 1: Start the FastAPI Backend
+### Step 1: Start the FastAPI Backend (Terminal 1)
 
-This service must be running first so the MCP tools have an API to communicate with.
-
-Open **Terminal 1** and run:
+This must run first — the MCP server depends on it.
 
 ```bash
 cd deep-dish-server
-uvicorn app.main:app --reload
+uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
 ```
 
-* The backend will be available at: `http://127.0.0.1:8000`
-* You can view the interactive API documentation at: `http://127.0.0.1:8000/docs`
+* Backend available at: `http://127.0.0.1:8000`
+* Interactive API docs: `http://127.0.0.1:8000/docs`
 
-### Step 2: Start the Telegram Bot (Includes MCP Client)
+### Step 2: Start the FastMCP Server (Terminal 2)
 
-The Telegram Bot interacts with the FastMCP Server using **STDIO**. You don't need to manually start the MCP server over HTTP because the bot itself spins up the `mcp_server.py` as a direct subprocess. 
+The MCP server bridges the Telegram bot to the FastAPI backend. It exposes tools over SSE.
 
-Open **Terminal 2**, make sure your environment is activated, and run:
+```bash
+cd deep-dish-server
+fastmcp run mcp_server.py -t sse --host 127.0.0.1 -p 3755
+```
+
+* MCP server available at: `http://127.0.0.1:3755/sse`
+
+> **Note:** The `API_BASE_URL` environment variable must point to the FastAPI backend.
+> The default is `http://127.0.0.1:8000`, so no extra config is needed for local development.
+
+### Step 3: Start the Telegram Bot (Terminal 3)
+
+The bot connects to the MCP server over a **persistent SSE connection** (reused across messages to avoid per-message overhead) and uses Ollama for LLM reasoning.
+
+Make sure **Ollama is running** with your chosen model pulled (default: `qwen3.5:latest`):
+
+```bash
+ollama pull qwen3.5:latest
+```
+
+Then start the bot from the project root:
 
 ```bash
 python telegram_bot.py
 ```
+
+| Environment Variable | Default | Description |
+|---|---|---|
+| `TELEGRAM_TOKEN` | *(see code)* | Your Telegram Bot API token |
+| `OLLAMA_MODEL` | `qwen3.5:latest` | Ollama model to use for reasoning |
 
 ---
 
@@ -126,7 +150,7 @@ docker compose up --build
 This exposes:
 
 * FastAPI at `http://127.0.0.1:8000`
-* MCP server at `http://127.0.0.1:3755/mcp`
+* MCP server at `http://127.0.0.1:3755/sse`
 
 To run the test suite from the `testes` folder against the live stack, use:
 
