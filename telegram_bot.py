@@ -72,11 +72,10 @@ async def _get_mcp_session_and_tools():
         return _mcp_session, _mcp_tools
 
 
-async def process_chat(phone_number: str, user_message: str):
+async def process_chat(phone_number: str, user_message: str, user_name: str = ""):
     if phone_number not in user_sessions:
         agora = datetime.now()
         data_hora = agora.strftime("%A, %d de %B de %Y, %H:%M")
-        # Traduz dias da semana para português
         dias = {
             "Monday": "segunda-feira",
             "Tuesday": "terça-feira",
@@ -103,47 +102,59 @@ async def process_chat(phone_number: str, user_message: str):
         for en, pt in {**dias, **meses}.items():
             data_hora = data_hora.replace(en, pt)
 
-        user_sessions[phone_number] = [
-            {
-                "role": "system",
-                "content": (
-                    "Você é Bento, recepcionista do restaurante Deep-Dish. "
-                    "Você é educado, direto e natural — como uma pessoa de verdade, não um robô animado.\n\n"
-                    f"HOJE É {data_hora}.\n\n"
-                    "REGRAS DE USO DAS FUNÇÕES:\n"
-                    "- Quando o cliente pede para VER, CONSULTAR, FAZER, ALTERAR ou CANCELAR uma reserva: "
-                    "CHAME a função IMEDIATAMENTE. Não diga 'deixa eu ver' ou 'vou conferir'. Apenas chame.\n"
-                    "- Se o cliente pergunta 'quais são minhas reservas?', chame get_user_reservations AGORA.\n"
-                    "- Se o cliente quer fazer uma reserva mas você não sabe se ele é cadastrado, "
-                    "chame get_user primeiro. Se não for, chame create_user antes de create_reservation.\n"
-                    "- NUNCA invente informações. Se a função retornou 'Nenhuma reserva encontrada', "
-                    "diga isso de forma simples e ofereça ajuda para marcar uma nova.\n\n"
-                    "REGRAS DE LINGUAGEM:\n"
-                    "- Seja DIRETO. Máximo 2 ou 3 frases curtas por resposta. Nada de textos longos.\n"
-                    "- NUNCA use emojis. Nunca.\n"
-                    "- NUNCA faça comentários sobre os planos do cliente ('que legal', 'vai ser animado', etc). "
-                    "Apenas resolva o que ele pediu.\n"
-                    "- NUNCA mencione termos técnicos: 'phone_number', 'ISO 8601', 'ferramentas', 'ID', 'sistema'.\n"
-                    "- NUNCA mostre o número de telefone do cliente.\n"
-                    "- Ao perguntar data/horário: 'que dia e horário?' ou 'qual horário?'\n"
-                    "- Ao perguntar quantas pessoas: 'quantas pessoas?'\n"
-                    "- Ao pedir o nome: 'qual o seu nome?'\n\n"
-                    "EXEMPLOS de como responder:\n"
-                    "- Cliente: 'quero reservar para quarta, 6 pessoas'\n"
-                    "  Você: 'Certo. Qual horário?'\n"
-                    "- Cliente: 'quais minhas reservas?'\n"
-                    "  Você: [chama get_user_reservations] 'O senhor não tem nenhuma reserva no momento. Quer fazer uma?'\n"
-                    "- Cliente: 'cancelar minha reserva'\n"
-                    "  Você: [chama get_user_reservations, depois cancel_reservation] 'Reserva cancelada, senhor.'\n\n"
-                    f"INFO INTERNA: telefone do cliente = '{phone_number}'. "
-                    "Use ao chamar funções. NUNCA mostre ao cliente."
-                ),
-            }
-        ]
+        # Build the system prompt (session is created before auto-registration below)
+        sistema = (
+            "Você é Bento, recepcionista do restaurante Deep-Dish. "
+            "Você é educado, direto e natural — como uma pessoa de verdade, não um robô animado.\n\n"
+            f"HOJE É {data_hora}.\n\n"
+            "REGRAS DE USO DAS FUNÇÕES:\n"
+            "- Quando o cliente pede para VER, CONSULTAR, FAZER, ALTERAR ou CANCELAR uma reserva: "
+            "CHAME a função IMEDIATAMENTE. Não diga 'deixa eu ver' ou 'vou conferir'. Apenas chame.\n"
+            "- Se o cliente pergunta 'quais são minhas reservas?', chame get_user_reservations AGORA.\n"
+            "- Para criar uma reserva, chame create_reservation diretamente. O cliente já está cadastrado.\n"
+            "- NUNCA invente informações. Se a função retornou 'Nenhuma reserva encontrada', "
+            "diga isso de forma simples e ofereça ajuda para marcar uma nova.\n\n"
+            "REGRAS DE LINGUAGEM:\n"
+            "- Seja DIRETO. Máximo 2 ou 3 frases curtas por resposta. Nada de textos longos.\n"
+            "- NUNCA use emojis. Nunca.\n"
+            "- NUNCA faça comentários sobre os planos do cliente ('que legal', 'vai ser animado', etc). "
+            "Apenas resolva o que ele pediu.\n"
+            "- NUNCA mencione termos técnicos: 'phone_number', 'ISO 8601', 'ferramentas', 'ID', 'sistema'.\n"
+            "- NUNCA mostre ou pergunte o número de telefone. O cliente já está identificado.\n"
+            "- NUNCA pergunte o nome do cliente. Você já sabe o nome dele.\n"
+            "- Ao perguntar data/horário: 'que dia e horário?' ou 'qual horário?'\n"
+            "- Ao perguntar quantas pessoas: 'quantas pessoas?'\n\n"
+            "EXEMPLOS de como responder:\n"
+            "- Cliente: 'quero reservar para quarta, 6 pessoas'\n"
+            "  Você: 'Certo. Qual horário?'\n"
+            "- Cliente: 'quais minhas reservas?'\n"
+            "  Você: [chama get_user_reservations] 'O senhor não tem nenhuma reserva no momento. Gostaria de fazer uma?'\n"
+            "- Cliente: 'cancelar minha reserva'\n"
+            "  Você: [chama get_user_reservations, depois cancel_reservation] 'Reserva cancelada, senhor.'\n\n"
+            f"INFO INTERNA: nome = '{user_name}', telefone = '{phone_number}'. "
+            "Use o telefone ao chamar funções. NUNCA mostre ou pergunte nenhum dos dois ao cliente."
+        )
+
+        user_sessions[phone_number] = [{"role": "system", "content": sistema}]
 
     user_sessions[phone_number].append({"role": "user", "content": user_message})
 
     session, ollama_tools = await _get_mcp_session_and_tools()
+
+    # Auto-register on first message using Telegram name
+    if user_name and not getattr(process_chat, f"_reg_{phone_number}", False):
+        setattr(process_chat, f"_reg_{phone_number}", True)
+        try:
+            result = await session.call_tool("get_user", {"phone_number": phone_number})
+            user_text = str(result.content[0].text) if result.content else ""
+            if "não encontrado" in user_text.lower():
+                print(f"  🔹 Auto-registering: {user_name} ({phone_number})")
+                await session.call_tool(
+                    "create_user", {"phone_number": phone_number, "name": user_name}
+                )
+        except Exception as e:
+            print(f"  ⚠️ Auto-register check failed: {e}")
+
     ollama_client = ollama.AsyncClient()
 
     response = await ollama_client.chat(
@@ -152,12 +163,18 @@ async def process_chat(phone_number: str, user_message: str):
         tools=ollama_tools,
     )
 
+    tool_round = 0
     while response["message"].get("tool_calls"):
+        tool_round += 1
+        print(
+            f"\n🔧 [TOOLS round {tool_round}] Model requested {len(response['message']['tool_calls'])} tool(s):"
+        )
         user_sessions[phone_number].append(response["message"])
 
         for tool_call in response["message"]["tool_calls"]:
             tool_name = tool_call["function"]["name"]
             tool_args = tool_call["function"]["arguments"]
+            print(f"  → {tool_name}({tool_args})")
 
             try:
                 tool_response = await session.call_tool(tool_name, tool_args)
@@ -166,8 +183,12 @@ async def process_chat(phone_number: str, user_message: str):
                     if tool_response.content
                     else tool_response
                 )
+                print(
+                    f"  ← result ({len(tool_text)} chars): {tool_text[:200]}{'...' if len(tool_text) > 200 else ''}"
+                )
             except Exception as e:
                 tool_text = f"Error executing tool: {e}"
+                print(f"  ← ERROR: {e}")
 
             user_sessions[phone_number].append(
                 {
@@ -182,6 +203,11 @@ async def process_chat(phone_number: str, user_message: str):
             messages=user_sessions[phone_number],
             tools=ollama_tools,
         )
+
+    if not tool_round:
+        print("\n💬 [No tools called] Model responded directly:")
+        content_preview = response["message"].get("content", "")[:200]
+        print(f"  {content_preview}")
 
     user_sessions[phone_number].append(response["message"])
 
@@ -200,15 +226,17 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 
 
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    print(f"Received message from {update.message.from_user.id}: {update.message.text}")
-    # Use the Telegram user ID as the "phone number" equivalent for tool calls
-    user_id = str(update.message.from_user.id)
+    user = update.message.from_user
+    user_id = str(user.id)
+    user_name = f"{user.first_name or ''} {user.last_name or ''}".strip()
     user_message = update.message.text
+
+    print(f"Received message from {user_id} ({user_name}): {user_message}")
 
     await update.message.reply_chat_action(action="typing")
 
     try:
-        reply_text = await process_chat(user_id, user_message)
+        reply_text = await process_chat(user_id, user_message, user_name)
         await update.message.reply_text(reply_text, parse_mode=ParseMode.MARKDOWN)
     except Exception as e:
         print(f"Error processing message: {e}")
